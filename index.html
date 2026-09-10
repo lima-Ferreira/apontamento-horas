@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17243a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Apontamento de Horas</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">LOJAS MARAVILHA</div>
+    <h1>Apontamento de Horas</h1>
+  </div>
+  <button id="btnConfig" class="icon-btn">⚙️</button>
+</header>
+
+<main>
+  <section id="configCard" class="card hidden">
+    <h2>Configuração do aparelho</h2>
+    <p class="muted">Preencha uma vez. Os dados ficam apenas neste aparelho.</p>
+    <label>Nome do funcionário/responsável
+      <input id="cfgNome" placeholder="Ex.: Isaque da Silva Nascimento">
+    </label>
+    <label>Loja / setor
+      <input id="cfgLoja" placeholder="Ex.: DEPÓSITO - 04">
+    </label>
+    <label>Quem recebe os apontamentos
+      <input id="cfgDestino" value="Lima">
+    </label>
+    <div class="actions">
+      <button id="btnSalvarConfig" class="primary">Salvar</button>
+      <button id="btnFecharConfig" class="secondary">Fechar</button>
+    </div>
+  </section>
+
+  <section class="card identity">
+    <div id="avatar" class="avatar">?</div>
+    <div>
+      <small class="muted">Apontamentos de</small>
+      <div id="whoName" class="who-name">Configure seu nome</div>
+      <div id="whoStore" class="muted"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Novo apontamento</h2>
+    <p class="muted">Nada é lançado oficialmente no Banco de Horas nesta etapa.</p>
+
+    <label>Data
+      <input id="data" type="date">
+    </label>
+
+    <div class="field-title">Como informar?</div>
+    <div class="segmented">
+      <button id="modeDirect" class="seg active">Hora extra direta</button>
+      <button id="modeTimes" class="seg">Pelos horários</button>
+    </div>
+
+    <div id="directFields">
+      <label>Quantidade de hora extra
+        <div class="time-pair">
+          <input id="extraHoras" type="number" min="0" max="23" inputmode="numeric" placeholder="Horas">
+          <span>:</span>
+          <input id="extraMinutos" type="number" min="0" max="59" inputmode="numeric" placeholder="Min">
+        </div>
+      </label>
+    </div>
+
+    <div id="timeFields" class="hidden">
+      <div class="grid2">
+        <label>Início
+          <input id="inicio" type="time">
+        </label>
+        <label>Fim
+          <input id="fim" type="time">
+        </label>
+      </div>
+      <label>Intervalo
+        <div class="time-pair">
+          <input id="intervaloHoras" type="number" min="0" max="8" value="1">
+          <span>:</span>
+          <input id="intervaloMinutos" type="number" min="0" max="59" value="0">
+        </div>
+      </label>
+      <div class="notice">Nesta V1 os horários ficam registrados como informação. A hora extra continua sendo informada manualmente para não calcular errado antes de definirmos a jornada oficial.</div>
+      <label>Hora extra apurada
+        <div class="time-pair">
+          <input id="extraHoras2" type="number" min="0" max="23" inputmode="numeric" placeholder="Horas">
+          <span>:</span>
+          <input id="extraMinutos2" type="number" min="0" max="59" inputmode="numeric" placeholder="Min">
+        </div>
+      </label>
+    </div>
+
+    <label>Motivo / serviço realizado
+      <textarea id="motivo" rows="3" placeholder="Ex.: Rota de Palhano, carregando carro, fazendo entregas..."></textarea>
+    </label>
+
+    <label>Com quem estava? <span class="muted">(opcional)</span>
+      <input id="companhia" placeholder="Ex.: Enzo, Maycom">
+    </label>
+
+    <label>Observação <span class="muted">(opcional)</span>
+      <textarea id="observacao" rows="2" placeholder="Ex.: Tirou 1h de almoço, saiu às 06:30..."></textarea>
+    </label>
+
+    <button id="btnAdicionar" class="primary full">+ Adicionar apontamento</button>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <h2>Meus apontamentos</h2>
+        <p id="countText" class="muted">Nenhum apontamento salvo.</p>
+      </div>
+      <button id="btnLimpar" class="danger-link">Limpar</button>
+    </div>
+
+    <div id="emptyState" class="empty">Seus registros aparecerão aqui e continuarão salvos neste aparelho.</div>
+    <div id="lista"></div>
+
+    <div id="summary" class="hidden">
+      <div class="total-box">
+        <span>Total informado</span>
+        <strong id="totalHoras">00:00</strong>
+      </div>
+      <div class="stack">
+        <button id="btnWhats" class="whatsapp">Compartilhar resumo</button>
+        <button id="btnExport" class="primary">Gerar arquivo para importar</button>
+      </div>
+      <p class="footnote">O arquivo será conferido no Banco de Horas antes de qualquer lançamento oficial.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Backup e restauração</summary>
+      <p class="muted">Como os dados ficam somente neste aparelho, você pode baixar um backup.</p>
+      <div class="actions">
+        <button id="btnBackup" class="secondary">Baixar backup</button>
+        <label class="secondary file-label">Restaurar backup
+          <input id="restoreInput" type="file" accept=".json,application/json" hidden>
+        </label>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

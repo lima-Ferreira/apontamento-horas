@@ -1,0 +1,9 @@
+{
+  "name": "Apontamento de Horas",
+  "short_name": "Apontamentos",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f8",
+  "theme_color": "#17243a",
+  "description": "Registro local de apontamentos de horas para posterior conferência."
+}
