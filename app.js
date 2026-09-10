@@ -86,6 +86,27 @@ function summaryText(){
   arr.forEach(i=>{t+=`${br(i.data)} — *${hhmm(i.extraMinutos)}*\n${i.motivo}\n`;if(i.companhia)t+=`Com: ${i.companhia}\n`;if(i.observacao)t+=`Obs.: ${i.observacao}\n`;if(i.mode==="times")t+=`Horário: ${i.inicio||"--:--"} → ${i.fim||"--:--"} | Intervalo ${hhmm(i.intervaloMinutos||0)}\n`;t+="\n"});
   t+=`*Total informado: ${hhmm(arr.reduce((s,i)=>s+i.extraMinutos,0))}*`;return t
 }
+async function shareImportFile(){
+  const c=config(),arr=items();
+  if(!arr.length){alert("Adicione pelo menos um apontamento antes de enviar.");return}
+  const d=arr.map(x=>x.data).sort();
+  const filename=`Apontamentos-${clean(c.nome)}-${d[0]}-a-${d[d.length-1]}.json`;
+  const blob=new Blob([JSON.stringify(payload("importacao"),null,2)],{type:"application/json"});
+  const file=new File([blob],filename,{type:"application/json"});
+  if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+    try{
+      await navigator.share({
+        title:"Arquivo para importar no Banco de Horas",
+        text:`Apontamentos de ${c.nome}${c.loja?` — ${c.loja}`:""}`,
+        files:[file]
+      });
+      return;
+    }catch(e){ if(e && e.name==="AbortError") return; }
+  }
+  download(payload("importacao"),filename);
+  alert("Este navegador não permitiu compartilhar o arquivo diretamente. O JSON foi salvo no aparelho para você anexar no WhatsApp.");
+}
+
 async function share(){
   const text=summaryText();if(navigator.share){try{await navigator.share({title:"Apontamento de Horas",text});return}catch{}}
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank")
@@ -95,9 +116,11 @@ $("btnFecharConfig").onclick=()=>$("configCard").classList.add("hidden");
 $("btnSalvarConfig").onclick=()=>{const nome=$("cfgNome").value.trim();if(!nome)return alert("Informe o nome.");save(K.config,{nome,loja:$("cfgLoja").value.trim(),destino:$("cfgDestino").value.trim()||"Lima"});refreshIdentity();$("configCard").classList.add("hidden")};
 $("modeDirect").onclick=()=>setMode("direct");$("modeTimes").onclick=()=>setMode("times");$("btnAdicionar").onclick=addOrUpdate;
 $("btnWhats").onclick=share;
-$("btnExport").onclick=()=>{const c=config(),arr=items();if(!arr.length)return;const d=arr.map(x=>x.data).sort();download(payload("importacao"),`Apontamentos-${clean(c.nome)}-${d[0]}-a-${d[d.length-1]}.json`)};
+$("btnExport").onclick=shareImportFile;
 $("btnBackup").onclick=()=>download(payload("backup"),`Backup-Apontamentos-${clean(config().nome)}-${today()}.json`);
 $("restoreInput").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.schema!=="lojas-maravilha-apontamento-horas"||!Array.isArray(d.apontamentos))throw 0;if(!confirm(`Restaurar ${d.apontamentos.length} apontamento(s)?`))return;save(K.items,d.apontamentos);if(d.origem?.pessoa)save(K.config,{nome:d.origem.pessoa,loja:d.origem.loja||"",destino:d.origem.destino||"Lima"});refreshIdentity();render();alert("Backup restaurado.")}catch{alert("Arquivo inválido.")}e.target.value=""};
 $("btnLimpar").onclick=()=>{if(items().length&&confirm("Apagar todos os apontamentos deste aparelho?")){save(K.items,[]);render()}};
 $("data").value=today();refreshIdentity();render();setMode("direct");
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+
+const btnDownloadImport=$("btnDownloadImport"); if(btnDownloadImport) btnDownloadImport.onclick=()=>{const c=config(),arr=items();if(!arr.length)return;const d=arr.map(x=>x.data).sort();download(payload("importacao"),`Apontamentos-${clean(c.nome)}-${d[0]}-a-${d[d.length-1]}.json`)};

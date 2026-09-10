@@ -31,3 +31,10 @@ Para usar como app no celular, publique os arquivos em uma hospedagem estática 
 
 ## Importante
 Nada desta V1 entra automaticamente no Banco de Horas. O JSON será a ponte para a futura tela de conferência/importação na V2.9.
+
+
+## V1.1
+- “Compartilhar resumo” continua enviando o texto legível.
+- “Enviar arquivo para importação” cria o JSON e abre o compartilhamento nativo do celular com o arquivo anexado, quando o navegador suporta Web Share com arquivos.
+- Se o navegador não suportar, o JSON é salvo automaticamente para anexar manualmente.
+- “Salvar JSON no aparelho” continua disponível como alternativa.
