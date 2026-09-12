@@ -1,3 +1,13 @@
+# Apontamento de Horas V1.3 — WhatsApp direto
+
+- Corrige o botão de envio que não reagia em Motorola e Xiaomi.
+- O envio principal não usa mais `navigator.share`; abre diretamente `api.whatsapp.com` com o pacote BHAP1 preenchido.
+- Mantém **Copiar pacote**, JSON e backup como alternativas.
+- Service Worker atualizado para cache `apontamento-v1.3`, apagando caches antigos e buscando a versão mais recente antes do cache.
+- Mantém as mesmas chaves do localStorage da V1.1/V1.2, portanto os apontamentos já salvos no aparelho são preservados.
+
+---
+
 # Apontamento de Horas V1.2 — Envio por texto / Xiaomi
 
 Versão de uso pessoal do Lima. Mantém os dados e chaves locais da V1.1.

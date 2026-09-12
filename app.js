@@ -99,12 +99,13 @@ async function copiarPacote(){
   try{await navigator.clipboard.writeText(txt);alert("Pacote copiado. No computador, cole na tela Importar apontamentos do Banco de Horas.");}
   catch{prompt("Copie todo o texto abaixo:",txt)}
 }
-async function enviarPacoteTexto(){
+function enviarPacoteTexto(){
   if(!items().length)return alert("Adicione pelo menos um apontamento antes de enviar.");
   const c=config();
   const text=`APONTAMENTOS PARA O BANCO DE HORAS\n${c.nome||""}${c.loja?` — ${c.loja}`:""}\n\nCopie o código abaixo inteiro e cole no Banco de Horas:\n\n${pacoteTexto()}`;
-  if(navigator.share){try{await navigator.share({title:"Apontamentos para o Banco de Horas",text});return}catch(e){if(e?.name==="AbortError")return}}
-  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+  const url="https://api.whatsapp.com/send?text="+encodeURIComponent(text);
+  // Navegação direta no mesmo toque: evita bloqueio do Web Share/pop-up em Android, Xiaomi e PWA.
+  window.location.href=url;
 }
 
 async function shareImportFile(){
