@@ -86,6 +86,27 @@ function summaryText(){
   arr.forEach(i=>{t+=`${br(i.data)} — *${hhmm(i.extraMinutos)}*\n${i.motivo}\n`;if(i.companhia)t+=`Com: ${i.companhia}\n`;if(i.observacao)t+=`Obs.: ${i.observacao}\n`;if(i.mode==="times")t+=`Horário: ${i.inicio||"--:--"} → ${i.fim||"--:--"} | Intervalo ${hhmm(i.intervaloMinutos||0)}\n`;t+="\n"});
   t+=`*Total informado: ${hhmm(arr.reduce((s,i)=>s+i.extraMinutos,0))}*`;return t
 }
+
+function pacoteTexto(){
+  const json=JSON.stringify(payload("importacao"));
+  const bytes=new TextEncoder().encode(json);
+  let bin=""; bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return "BHAP1:"+btoa(bin);
+}
+async function copiarPacote(){
+  if(!items().length)return alert("Adicione pelo menos um apontamento antes de copiar.");
+  const txt=pacoteTexto();
+  try{await navigator.clipboard.writeText(txt);alert("Pacote copiado. No computador, cole na tela Importar apontamentos do Banco de Horas.");}
+  catch{prompt("Copie todo o texto abaixo:",txt)}
+}
+async function enviarPacoteTexto(){
+  if(!items().length)return alert("Adicione pelo menos um apontamento antes de enviar.");
+  const c=config();
+  const text=`APONTAMENTOS PARA O BANCO DE HORAS\n${c.nome||""}${c.loja?` — ${c.loja}`:""}\n\nCopie o código abaixo inteiro e cole no Banco de Horas:\n\n${pacoteTexto()}`;
+  if(navigator.share){try{await navigator.share({title:"Apontamentos para o Banco de Horas",text});return}catch(e){if(e?.name==="AbortError")return}}
+  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+
 async function shareImportFile(){
   const c=config(),arr=items();
   if(!arr.length){alert("Adicione pelo menos um apontamento antes de enviar.");return}
@@ -116,6 +137,8 @@ $("btnFecharConfig").onclick=()=>$("configCard").classList.add("hidden");
 $("btnSalvarConfig").onclick=()=>{const nome=$("cfgNome").value.trim();if(!nome)return alert("Informe o nome.");save(K.config,{nome,loja:$("cfgLoja").value.trim(),destino:$("cfgDestino").value.trim()||"Lima"});refreshIdentity();$("configCard").classList.add("hidden")};
 $("modeDirect").onclick=()=>setMode("direct");$("modeTimes").onclick=()=>setMode("times");$("btnAdicionar").onclick=addOrUpdate;
 $("btnWhats").onclick=share;
+$("btnSendText").onclick=enviarPacoteTexto;
+$("btnCopyPacket").onclick=copiarPacote;
 $("btnExport").onclick=shareImportFile;
 $("btnBackup").onclick=()=>download(payload("backup"),`Backup-Apontamentos-${clean(config().nome)}-${today()}.json`);
 $("restoreInput").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.schema!=="lojas-maravilha-apontamento-horas"||!Array.isArray(d.apontamentos))throw 0;if(!confirm(`Restaurar ${d.apontamentos.length} apontamento(s)?`))return;save(K.items,d.apontamentos);if(d.origem?.pessoa)save(K.config,{nome:d.origem.pessoa,loja:d.origem.loja||"",destino:d.origem.destino||"Lima"});refreshIdentity();render();alert("Backup restaurado.")}catch{alert("Arquivo inválido.")}e.target.value=""};
