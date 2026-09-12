@@ -1,6 +1,6 @@
 
 const K={config:"apontamento_v1_config",items:"apontamento_v1_items"};
-// V1.4 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
+// V1.5 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
 const $=id=>document.getElementById(id);
 let mode="direct",editingId=null;
 const load=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
@@ -52,8 +52,9 @@ function render(){
     ${i.mode==="times"?`<div class="item-meta">Horário: ${esc(i.inicio||"--:--")} → ${esc(i.fim||"--:--")} · Intervalo ${hhmm(i.intervaloMinutos||0)}</div>`:""}
     ${i.observacao?`<div class="item-meta"><b>Obs.:</b> ${esc(i.observacao)}</div>`:""}
     <div class="item-code">Código: ${esc(i.id)}</div>
-    <div class="item-actions"><button class="mini edit" data-id="${i.id}">Editar</button>${i.enviadoEm?`<button class="mini resend" data-id="${i.id}">Reenviar</button>`:""}<button class="mini delete" data-id="${i.id}">Excluir</button></div>
+    <div class="item-actions"><button class="mini copy" data-id="${i.id}">Copiar dados</button><button class="mini edit" data-id="${i.id}">Editar</button>${i.enviadoEm?`<button class="mini resend" data-id="${i.id}">Reenviar</button>`:""}<button class="mini delete" data-id="${i.id}">Excluir</button></div>
   </article>`).join("");
+  document.querySelectorAll(".copy").forEach(b=>b.onclick=()=>copiarDadosItem(b.dataset.id,b));
   document.querySelectorAll(".edit").forEach(b=>b.onclick=()=>editItem(b.dataset.id));
   document.querySelectorAll(".delete").forEach(b=>b.onclick=()=>deleteItem(b.dataset.id));
   document.querySelectorAll(".resend").forEach(b=>b.onclick=()=>marcarParaReenvio(b.dataset.id));
@@ -76,6 +77,25 @@ function addOrUpdate(){
     enviadoEm:null};
   if(old)arr[arr.findIndex(x=>x.id===editingId)]=rec;else arr.push(rec);save(K.items,arr);resetForm();render();
 }
+
+function textoDadosItem(i){
+  let t=`${i.pessoa||config().nome||""}\nData: ${br(i.data)}\nHora extra: ${hhmm(i.extraMinutos)}\nMotivo: ${i.motivo||""}`;
+  if(i.mode==="times") t+=`\nEntrada: ${i.inicio||"--:--"}\nSaída: ${i.fim||"--:--"}\nIntervalo: ${hhmm(i.intervaloMinutos||0)}`;
+  if(i.companhia) t+=`\nCom: ${i.companhia}`;
+  if(i.observacao) t+=`\nObservação: ${i.observacao}`;
+  return t;
+}
+async function copiarDadosItem(id,btn){
+  const i=items().find(x=>x.id===id);if(!i)return;
+  const txt=textoDadosItem(i);
+  try{
+    await navigator.clipboard.writeText(txt);
+    if(btn){const old=btn.textContent;btn.textContent="Copiado ✓";btn.classList.add("copied");setTimeout(()=>{btn.textContent=old;btn.classList.remove("copied")},1600)}
+  }catch{
+    prompt("Copie os dados abaixo:",txt);
+  }
+}
+
 function editItem(id){
   const i=items().find(x=>x.id===id);if(!i)return;editingId=id;$("data").value=i.data;setMode(i.mode||"direct");
   const h=Math.floor(i.extraMinutos/60),m=i.extraMinutos%60;

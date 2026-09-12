@@ -1,4 +1,4 @@
-const CACHE="apontamento-v1.4";
+const CACHE="apontamento-v1.5";
 const ASSETS=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest"];
 
 self.addEventListener("install",event=>{

@@ -1,4 +1,14 @@
-# Apontamento de Horas V1.4 — Pendentes e enviados
+# Apontamento de Horas V1.5 — Copiar dados
+
+## Novidade
+- Cada apontamento ganhou o botão **Copiar dados**.
+- Copia somente os dados úteis do lançamento: funcionário, data, hora extra, motivo, horários/intervalo quando existirem, companhia e observação.
+- Não copia código interno, BHAP1 ou informações técnicas.
+- Após copiar, o botão mostra **Copiado ✓**.
+- Se a API de clipboard não estiver disponível, abre uma caixa com o texto para cópia manual.
+- Mantém o controle Pendentes/Enviados da V1.4 e as mesmas chaves do localStorage, preservando os dados existentes.
+- Cache do Service Worker atualizado para V1.5.
+
 
 ## O que mudou
 - Envio pelo WhatsApp leva somente apontamentos que ainda não foram enviados.
