@@ -1,3 +1,15 @@
+# Apontamento de Horas V1.4 — Pendentes e enviados
+
+## O que mudou
+- Envio pelo WhatsApp leva somente apontamentos que ainda não foram enviados.
+- Ao abrir o WhatsApp, os registros enviados ficam marcados como **Enviados** no aparelho.
+- Registros antigos continuam salvos para consulta e não entram automaticamente em novos pacotes.
+- Botão **Reenviar** devolve um registro já enviado para a fila de pendentes.
+- Se um registro enviado for editado, ele volta automaticamente a **Pendente**, para que a correção seja enviada novamente.
+- JSON de importação também usa apenas os pendentes; backup continua contendo todos os registros.
+- Mantidas as mesmas chaves de localStorage das versões anteriores, preservando os apontamentos já existentes.
+- Service Worker/cache atualizado para V1.4.
+
 # Apontamento de Horas V1.3 — WhatsApp direto
 
 - Corrige o botão de envio que não reagia em Motorola e Xiaomi.

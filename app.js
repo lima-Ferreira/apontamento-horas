@@ -1,10 +1,12 @@
 
 const K={config:"apontamento_v1_config",items:"apontamento_v1_items"};
+// V1.4 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
 const $=id=>document.getElementById(id);
 let mode="direct",editingId=null;
 const load=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const items=()=>load(K.items)||[];
+const pendentes=()=>items().filter(i=>!i.enviadoEm);
 const pad=n=>String(n).padStart(2,"0");
 const hhmm=m=>`${pad(Math.floor((m||0)/60))}:${pad((m||0)%60)}`;
 const br=d=>{if(!d)return"";const [y,m,day]=d.split("-");return `${day}/${m}/${y}`};
@@ -39,20 +41,26 @@ function resetForm(){
 }
 function render(){
   const arr=items().sort((a,b)=>b.data.localeCompare(a.data)||b.createdAt.localeCompare(a.createdAt));
-  $("countText").textContent=arr.length?`${arr.length} apontamento(s) salvo(s).`:"Nenhum apontamento salvo.";
+  const qtdPendentes=arr.filter(i=>!i.enviadoEm).length;
+  $("countText").textContent=arr.length?`${arr.length} salvo(s) · ${qtdPendentes} pendente(s) de envio.`:"Nenhum apontamento salvo.";
   $("emptyState").classList.toggle("hidden",!!arr.length);$("summary").classList.toggle("hidden",!arr.length);
   $("totalHoras").textContent=hhmm(arr.reduce((s,i)=>s+i.extraMinutos,0));
   $("lista").innerHTML=arr.map(i=>`<article class="item">
-    <div class="item-top"><div class="item-date">${br(i.data)}</div><div class="item-hours">+${hhmm(i.extraMinutos)}</div></div>
+    <div class="item-top"><div><div class="item-date">${br(i.data)}</div><span class="send-status ${i.enviadoEm?"sent":"pending"}">${i.enviadoEm?"Enviado":"Pendente"}</span></div><div class="item-hours">+${hhmm(i.extraMinutos)}</div></div>
     <div class="item-reason">${esc(i.motivo)}</div>
     ${i.companhia?`<div class="item-meta"><b>Com:</b> ${esc(i.companhia)}</div>`:""}
     ${i.mode==="times"?`<div class="item-meta">Horário: ${esc(i.inicio||"--:--")} → ${esc(i.fim||"--:--")} · Intervalo ${hhmm(i.intervaloMinutos||0)}</div>`:""}
     ${i.observacao?`<div class="item-meta"><b>Obs.:</b> ${esc(i.observacao)}</div>`:""}
     <div class="item-code">Código: ${esc(i.id)}</div>
-    <div class="item-actions"><button class="mini edit" data-id="${i.id}">Editar</button><button class="mini delete" data-id="${i.id}">Excluir</button></div>
+    <div class="item-actions"><button class="mini edit" data-id="${i.id}">Editar</button>${i.enviadoEm?`<button class="mini resend" data-id="${i.id}">Reenviar</button>`:""}<button class="mini delete" data-id="${i.id}">Excluir</button></div>
   </article>`).join("");
   document.querySelectorAll(".edit").forEach(b=>b.onclick=()=>editItem(b.dataset.id));
   document.querySelectorAll(".delete").forEach(b=>b.onclick=()=>deleteItem(b.dataset.id));
+  document.querySelectorAll(".resend").forEach(b=>b.onclick=()=>marcarParaReenvio(b.dataset.id));
+  const btn=$("btnSendText"); if(btn){btn.textContent=qtdPendentes?`Enviar ${qtdPendentes} pendente(s) para o WhatsApp`:"Nenhum apontamento pendente";btn.disabled=!qtdPendentes;}
+  const cp=$("btnCopyPacket"); if(cp) cp.disabled=!qtdPendentes;
+  const ex=$("btnExport"); if(ex) ex.disabled=!qtdPendentes;
+  const dl=$("btnDownloadImport"); if(dl) dl.disabled=!qtdPendentes;
 }
 function addOrUpdate(){
   const c=config();if(!c.nome){alert("Primeiro configure o nome neste aparelho.");$("configCard").classList.remove("hidden");return}
@@ -63,7 +71,9 @@ function addOrUpdate(){
     companhia:$("companhia").value.trim(),observacao:$("observacao").value.trim(),
     inicio:mode==="times"?$("inicio").value:"",fim:mode==="times"?$("fim").value:"",
     intervaloMinutos:mode==="times"?(Number($("intervaloHoras").value||0)*60+Number($("intervaloMinutos").value||0)):0,
-    createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),status:"informado"};
+    createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),status:"informado",
+    // Ao editar um registro já enviado, ele volta a ficar pendente para que a correção possa ser enviada novamente.
+    enviadoEm:null};
   if(old)arr[arr.findIndex(x=>x.id===editingId)]=rec;else arr.push(rec);save(K.items,arr);resetForm();render();
 }
 function editItem(id){
@@ -76,9 +86,17 @@ function editItem(id){
   $("btnAdicionar").textContent="Salvar alteração";window.scrollTo({top:0,behavior:"smooth"});
 }
 function deleteItem(id){if(confirm("Excluir este apontamento?")){save(K.items,items().filter(x=>x.id!==id));render()}}
-function payload(tipo){
-  const c=config(),arr=items();return {schema:"lojas-maravilha-apontamento-horas",schemaVersion:1,tipo,geradoEm:new Date().toISOString(),
+function marcarParaReenvio(id){
+  const arr=items();const idx=arr.findIndex(x=>x.id===id);if(idx<0)return;
+  arr[idx]={...arr[idx],enviadoEm:null};save(K.items,arr);render();
+}
+function payload(tipo,arrSelecionados=null){
+  const c=config(),arr=arrSelecionados||items();return {schema:"lojas-maravilha-apontamento-horas",schemaVersion:1,tipo,geradoEm:new Date().toISOString(),
     origem:{pessoa:c.nome||"",loja:c.loja||"",destino:c.destino||"Lima"},quantidade:arr.length,totalMinutos:arr.reduce((s,i)=>s+i.extraMinutos,0),apontamentos:arr}
+}
+function marcarPendentesComoEnviados(ids){
+  const agora=new Date().toISOString(),setIds=new Set(ids),arr=items().map(i=>setIds.has(i.id)?{...i,enviadoEm:agora}:i);
+  save(K.items,arr);render();
 }
 function download(data,name){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
 function summaryText(){
@@ -87,30 +105,32 @@ function summaryText(){
   t+=`*Total informado: ${hhmm(arr.reduce((s,i)=>s+i.extraMinutos,0))}*`;return t
 }
 
-function pacoteTexto(){
-  const json=JSON.stringify(payload("importacao"));
+function pacoteTexto(arrSelecionados=pendentes()){
+  const json=JSON.stringify(payload("importacao",arrSelecionados));
   const bytes=new TextEncoder().encode(json);
   let bin=""; bytes.forEach(b=>bin+=String.fromCharCode(b));
   return "BHAP1:"+btoa(bin);
 }
 async function copiarPacote(){
-  if(!items().length)return alert("Adicione pelo menos um apontamento antes de copiar.");
-  const txt=pacoteTexto();
+  const arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");
+  const txt=pacoteTexto(arr);
   try{await navigator.clipboard.writeText(txt);alert("Pacote copiado. No computador, cole na tela Importar apontamentos do Banco de Horas.");}
   catch{prompt("Copie todo o texto abaixo:",txt)}
 }
 function enviarPacoteTexto(){
-  if(!items().length)return alert("Adicione pelo menos um apontamento antes de enviar.");
+  const arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");
   const c=config();
-  const text=`APONTAMENTOS PARA O BANCO DE HORAS\n${c.nome||""}${c.loja?` — ${c.loja}`:""}\n\nCopie o código abaixo inteiro e cole no Banco de Horas:\n\n${pacoteTexto()}`;
+  const text=`APONTAMENTOS PARA O BANCO DE HORAS\n${c.nome||""}${c.loja?` — ${c.loja}`:""}\n${arr.length} apontamento(s) novo(s)\n\nCopie o código abaixo inteiro e cole no Banco de Horas:\n\n${pacoteTexto(arr)}`;
+  // Consideramos os registros como enviados quando o WhatsApp é aberto. Se o usuário desistir do envio,
+  // basta tocar em “Reenviar” no registro para colocá-lo novamente na fila.
+  marcarPendentesComoEnviados(arr.map(i=>i.id));
   const url="https://api.whatsapp.com/send?text="+encodeURIComponent(text);
-  // Navegação direta no mesmo toque: evita bloqueio do Web Share/pop-up em Android, Xiaomi e PWA.
   window.location.href=url;
 }
 
 async function shareImportFile(){
-  const c=config(),arr=items();
-  if(!arr.length){alert("Adicione pelo menos um apontamento antes de enviar.");return}
+  const c=config(),arr=pendentes();
+  if(!arr.length){alert("Não há apontamentos pendentes de envio.");return}
   const d=arr.map(x=>x.data).sort();
   const filename=`Apontamentos-${clean(c.nome)}-${d[0]}-a-${d[d.length-1]}.json`;
   const blob=new Blob([JSON.stringify(payload("importacao"),null,2)],{type:"application/json"});
@@ -122,6 +142,7 @@ async function shareImportFile(){
         text:`Apontamentos de ${c.nome}${c.loja?` — ${c.loja}`:""}`,
         files:[file]
       });
+      marcarPendentesComoEnviados(arr.map(i=>i.id));
       return;
     }catch(e){ if(e && e.name==="AbortError") return; }
   }
@@ -147,4 +168,4 @@ $("btnLimpar").onclick=()=>{if(items().length&&confirm("Apagar todos os apontame
 $("data").value=today();refreshIdentity();render();setMode("direct");
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 
-const btnDownloadImport=$("btnDownloadImport"); if(btnDownloadImport) btnDownloadImport.onclick=()=>{const c=config(),arr=items();if(!arr.length)return;const d=arr.map(x=>x.data).sort();download(payload("importacao"),`Apontamentos-${clean(c.nome)}-${d[0]}-a-${d[d.length-1]}.json`)};
+const btnDownloadImport=$("btnDownloadImport"); if(btnDownloadImport) btnDownloadImport.onclick=()=>{const c=config(),arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");const d=arr.map(x=>x.data).sort();download(payload("importacao",arr),`Apontamentos-${clean(c.nome)}-${d[0]}-a-${d[d.length-1]}.json`)};
