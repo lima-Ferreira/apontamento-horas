@@ -1,6 +1,6 @@
 
 const K={config:"apontamento_v1_config",items:"apontamento_v1_items"};
-// V1.5 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
+// V1.6 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
 const $=id=>document.getElementById(id);
 let mode="direct",editingId=null;
 const load=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
@@ -60,6 +60,15 @@ function render(){
   document.querySelectorAll(".resend").forEach(b=>b.onclick=()=>marcarParaReenvio(b.dataset.id));
   const btn=$("btnSendText"); if(btn){btn.textContent=qtdPendentes?`Enviar ${qtdPendentes} pendente(s) para o WhatsApp`:"Nenhum apontamento pendente";btn.disabled=!qtdPendentes;}
   const cp=$("btnCopyPacket"); if(cp) cp.disabled=!qtdPendentes;
+  const box=$("packetCopyBox"), preview=$("packetCopyPreview"), status=$("packetCopyStatus");
+  if(box&&preview&&status){
+    box.classList.toggle("disabled",!qtdPendentes);
+    if(qtdPendentes){
+      const codigo=pacoteTexto(arr.filter(i=>!i.enviadoEm));
+      preview.textContent=codigo.slice(0,78)+(codigo.length>78?"…":"");
+      status.textContent=`${qtdPendentes} pendente(s) · toque para copiar somente o código BHAP1.`;
+    }else{preview.textContent="Nenhum pacote pendente";status.textContent="Crie ou marque um apontamento para reenvio.";}
+  }
   const ex=$("btnExport"); if(ex) ex.disabled=!qtdPendentes;
   const dl=$("btnDownloadImport"); if(dl) dl.disabled=!qtdPendentes;
 }
@@ -133,9 +142,13 @@ function pacoteTexto(arrSelecionados=pendentes()){
 }
 async function copiarPacote(){
   const arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");
-  const txt=pacoteTexto(arr);
-  try{await navigator.clipboard.writeText(txt);alert("Pacote copiado. No computador, cole na tela Importar apontamentos do Banco de Horas.");}
-  catch{prompt("Copie todo o texto abaixo:",txt)}
+  const txt=pacoteTexto(arr),box=$("packetCopyBox"),status=$("packetCopyStatus");
+  try{
+    await navigator.clipboard.writeText(txt);
+    if(box)box.classList.add("copied");
+    if(status)status.textContent="Código BHAP1 copiado ✓ Agora é só colar.";
+    setTimeout(()=>{if(box)box.classList.remove("copied");if(status)status.textContent=`${pendentes().length} pendente(s) · toque para copiar somente o código BHAP1.`},1800);
+  }catch{prompt("Copie todo o código BHAP1 abaixo:",txt)}
 }
 function enviarPacoteTexto(){
   const arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");
@@ -181,6 +194,7 @@ $("modeDirect").onclick=()=>setMode("direct");$("modeTimes").onclick=()=>setMode
 $("btnWhats").onclick=share;
 $("btnSendText").onclick=enviarPacoteTexto;
 $("btnCopyPacket").onclick=copiarPacote;
+const packetBox=$("packetCopyBox"); if(packetBox){packetBox.onclick=copiarPacote;packetBox.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();copiarPacote()}};}
 $("btnExport").onclick=shareImportFile;
 $("btnBackup").onclick=()=>download(payload("backup"),`Backup-Apontamentos-${clean(config().nome)}-${today()}.json`);
 $("restoreInput").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.schema!=="lojas-maravilha-apontamento-horas"||!Array.isArray(d.apontamentos))throw 0;if(!confirm(`Restaurar ${d.apontamentos.length} apontamento(s)?`))return;save(K.items,d.apontamentos);if(d.origem?.pessoa)save(K.config,{nome:d.origem.pessoa,loja:d.origem.loja||"",destino:d.origem.destino||"Lima"});refreshIdentity();render();alert("Backup restaurado.")}catch{alert("Arquivo inválido.")}e.target.value=""};

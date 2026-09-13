@@ -1,3 +1,15 @@
+# Apontamento de Horas V1.6 — copiar pacote para o Banco
+
+## Novidade principal
+- Caixa **Código para o Banco de Horas — TOQUE PARA COPIAR**.
+- Um toque copia **somente** o conteúdo técnico que começa em `BHAP1:` e termina no último caractere do pacote.
+- Não copia título, resumo, instruções ou outras partes da mensagem.
+- O botão **Copiar para o Banco de Horas** faz exatamente a mesma ação.
+- Copiar não marca o apontamento como enviado.
+- Mantidos Pendentes/Enviados, Reenviar, WhatsApp, JSON e backup.
+- Mesmas chaves `apontamento_v1_*`, preservando os dados já existentes no aparelho.
+- Cache do PWA atualizado para V1.6.
+
 # Apontamento de Horas V1.5 — Copiar dados
 
 ## Novidade

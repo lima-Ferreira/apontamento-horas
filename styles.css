@@ -39,3 +39,14 @@ textarea{resize:vertical}.field-title{font-size:13px;font-weight:700;margin:14px
 .send-status.sent{background:#e8f7ef;color:#13734b}
 .mini.resend{color:#2563eb}
 button:disabled{opacity:.5;cursor:not-allowed}
+
+/* V1.6 - caixa tipo chave Pix para copiar somente o pacote BHAP1 */
+.packet-copy-box{margin-top:10px;border:2px dashed #2563eb;border-radius:14px;padding:13px 14px;background:#eff6ff;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.packet-copy-box:active{transform:scale(.995)}
+.packet-copy-box.disabled{opacity:.55;cursor:not-allowed}
+.packet-copy-title{font-weight:800;color:#1e3a8a;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.packet-copy-title span{font-size:10px;letter-spacing:.04em;background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:4px 7px;white-space:nowrap}
+.packet-copy-preview{margin-top:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.packet-copy-status{margin-top:7px;font-size:12px;color:#64748b}
+.packet-copy-box.copied{border-style:solid;background:#f0fdf4;border-color:#16a34a}
+.packet-copy-box.copied .packet-copy-title{color:#166534}
