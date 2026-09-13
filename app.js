@@ -1,6 +1,6 @@
 
 const K={config:"apontamento_v1_config",items:"apontamento_v1_items"};
-// V1.6 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
+// V1.7 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
 const $=id=>document.getElementById(id);
 let mode="direct",editingId=null;
 const load=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
@@ -152,8 +152,9 @@ async function copiarPacote(){
 }
 function enviarPacoteTexto(){
   const arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");
-  const c=config();
-  const text=`APONTAMENTOS PARA O BANCO DE HORAS\n${c.nome||""}${c.loja?` — ${c.loja}`:""}\n${arr.length} apontamento(s) novo(s)\n\nCopie o código abaixo inteiro e cole no Banco de Horas:\n\n${pacoteTexto(arr)}`;
+  // V1.7: o WhatsApp recebe SOMENTE o pacote BHAP1. Assim, no celular de destino,
+  // basta copiar a mensagem inteira sem risco de levar título, resumo ou instruções junto.
+  const text=pacoteTexto(arr);
   // Consideramos os registros como enviados quando o WhatsApp é aberto. Se o usuário desistir do envio,
   // basta tocar em “Reenviar” no registro para colocá-lo novamente na fila.
   marcarPendentesComoEnviados(arr.map(i=>i.id));
