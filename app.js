@@ -1,6 +1,6 @@
 
 const K={config:"apontamento_v1_config",items:"apontamento_v1_items"};
-// V1.7 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
+// V1.8 mantém as mesmas chaves para preservar os dados já existentes no aparelho.
 const $=id=>document.getElementById(id);
 let mode="direct",editingId=null;
 const load=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
@@ -36,7 +36,7 @@ function extraMinutes(){
 function resetForm(){
   editingId=null;$("data").value=today();$("extraHoras").value="";$("extraMinutos").value="";
   $("inicio").value="";$("fim").value="";$("intervaloHoras").value="1";$("intervaloMinutos").value="0";
-  $("extraHoras2").value="";$("extraMinutos2").value="";$("motivo").value="";$("companhia").value="";$("observacao").value="";
+  $("extraHoras2").value="";$("extraMinutos2").value="";$("motivo").value="";$("parceiro1").value="";$("parceiro2").value="";$("observacao").value="";
   $("btnAdicionar").textContent="+ Adicionar apontamento";setMode("direct");
 }
 function render(){
@@ -48,7 +48,7 @@ function render(){
   $("lista").innerHTML=arr.map(i=>`<article class="item">
     <div class="item-top"><div><div class="item-date">${br(i.data)}</div><span class="send-status ${i.enviadoEm?"sent":"pending"}">${i.enviadoEm?"Enviado":"Pendente"}</span></div><div class="item-hours">+${hhmm(i.extraMinutos)}</div></div>
     <div class="item-reason">${esc(i.motivo)}</div>
-    ${i.companhia?`<div class="item-meta"><b>Com:</b> ${esc(i.companhia)}</div>`:""}
+    ${(i.parceiro1||i.parceiro2||i.companhia)?`<div class="item-meta"><b>Com:</b> ${esc([i.parceiro1,i.parceiro2].filter(Boolean).join(" + ")||i.companhia)}</div>`:""}
     ${i.mode==="times"?`<div class="item-meta">Horário: ${esc(i.inicio||"--:--")} → ${esc(i.fim||"--:--")} · Intervalo ${hhmm(i.intervaloMinutos||0)}</div>`:""}
     ${i.observacao?`<div class="item-meta"><b>Obs.:</b> ${esc(i.observacao)}</div>`:""}
     <div class="item-code">Código: ${esc(i.id)}</div>
@@ -78,7 +78,9 @@ function addOrUpdate(){
   if(!data)return alert("Informe a data.");if(extra<=0)return alert("Informe a quantidade de hora extra.");if(!motivo)return alert("Informe o motivo.");
   let arr=items();const old=editingId?arr.find(x=>x.id===editingId):null;
   const rec={id:old?.id||uid(),schemaVersion:1,pessoa:c.nome,loja:c.loja||"",data,mode,extraMinutos:extra,motivo,
-    companhia:$("companhia").value.trim(),observacao:$("observacao").value.trim(),
+    parceiro1:$("parceiro1").value.trim(),parceiro2:$("parceiro2").value.trim(),
+    parceiros:[$("parceiro1").value.trim(),$("parceiro2").value.trim()].filter(Boolean),
+    companhia:[$("parceiro1").value.trim(),$("parceiro2").value.trim()].filter(Boolean).join(", "),observacao:$("observacao").value.trim(),
     inicio:mode==="times"?$("inicio").value:"",fim:mode==="times"?$("fim").value:"",
     intervaloMinutos:mode==="times"?(Number($("intervaloHoras").value||0)*60+Number($("intervaloMinutos").value||0)):0,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),status:"informado",
@@ -90,7 +92,7 @@ function addOrUpdate(){
 function textoDadosItem(i){
   let t=`${i.pessoa||config().nome||""}\nData: ${br(i.data)}\nHora extra: ${hhmm(i.extraMinutos)}\nMotivo: ${i.motivo||""}`;
   if(i.mode==="times") t+=`\nEntrada: ${i.inicio||"--:--"}\nSaída: ${i.fim||"--:--"}\nIntervalo: ${hhmm(i.intervaloMinutos||0)}`;
-  if(i.companhia) t+=`\nCom: ${i.companhia}`;
+  const parceiros=[i.parceiro1,i.parceiro2].filter(Boolean); if(parceiros.length||i.companhia) t+=`\nCom: ${parceiros.join(" + ")||i.companhia}`;
   if(i.observacao) t+=`\nObservação: ${i.observacao}`;
   return t;
 }
@@ -111,7 +113,7 @@ function editItem(id){
   if(mode==="direct"){$("extraHoras").value=h;$("extraMinutos").value=m}else{
     $("extraHoras2").value=h;$("extraMinutos2").value=m;$("inicio").value=i.inicio||"";$("fim").value=i.fim||"";
     $("intervaloHoras").value=Math.floor((i.intervaloMinutos||0)/60);$("intervaloMinutos").value=(i.intervaloMinutos||0)%60}
-  $("motivo").value=i.motivo||"";$("companhia").value=i.companhia||"";$("observacao").value=i.observacao||"";
+  $("motivo").value=i.motivo||"";const ps=(Array.isArray(i.parceiros)?i.parceiros:[]);$("parceiro1").value=i.parceiro1||ps[0]||i.companhia||"";$("parceiro2").value=i.parceiro2||ps[1]||"";$("observacao").value=i.observacao||"";
   $("btnAdicionar").textContent="Salvar alteração";window.scrollTo({top:0,behavior:"smooth"});
 }
 function deleteItem(id){if(confirm("Excluir este apontamento?")){save(K.items,items().filter(x=>x.id!==id));render()}}
@@ -130,7 +132,7 @@ function marcarPendentesComoEnviados(ids){
 function download(data,name){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
 function summaryText(){
   const c=config(),arr=items().sort((a,b)=>a.data.localeCompare(b.data));let t=`*APONTAMENTO DE HORAS*\n${c.nome||"Funcionário"}${c.loja?` — ${c.loja}`:""}\n\n`;
-  arr.forEach(i=>{t+=`${br(i.data)} — *${hhmm(i.extraMinutos)}*\n${i.motivo}\n`;if(i.companhia)t+=`Com: ${i.companhia}\n`;if(i.observacao)t+=`Obs.: ${i.observacao}\n`;if(i.mode==="times")t+=`Horário: ${i.inicio||"--:--"} → ${i.fim||"--:--"} | Intervalo ${hhmm(i.intervaloMinutos||0)}\n`;t+="\n"});
+  arr.forEach(i=>{t+=`${br(i.data)} — *${hhmm(i.extraMinutos)}*\n${i.motivo}\n`;const ps=[i.parceiro1,i.parceiro2].filter(Boolean);if(ps.length||i.companhia)t+=`Com: ${ps.join(" + ")||i.companhia}\n`;if(i.observacao)t+=`Obs.: ${i.observacao}\n`;if(i.mode==="times")t+=`Horário: ${i.inicio||"--:--"} → ${i.fim||"--:--"} | Intervalo ${hhmm(i.intervaloMinutos||0)}\n`;t+="\n"});
   t+=`*Total informado: ${hhmm(arr.reduce((s,i)=>s+i.extraMinutos,0))}*`;return t
 }
 
@@ -152,7 +154,7 @@ async function copiarPacote(){
 }
 function enviarPacoteTexto(){
   const arr=pendentes();if(!arr.length)return alert("Não há apontamentos pendentes de envio.");
-  // V1.7: o WhatsApp recebe SOMENTE o pacote BHAP1. Assim, no celular de destino,
+  // V1.8: o WhatsApp recebe SOMENTE o pacote BHAP1. Assim, no celular de destino,
   // basta copiar a mensagem inteira sem risco de levar título, resumo ou instruções junto.
   const text=pacoteTexto(arr);
   // Consideramos os registros como enviados quando o WhatsApp é aberto. Se o usuário desistir do envio,
